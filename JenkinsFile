@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/TayyabQ/Lab11.git'
+            }
+        }
+        stage('Install Dependencies (Frontend)') {
+            steps {
+                sh 'npm install'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                docker.build name: 'tayyabqaisar/lab11:${env.BUILD_ID}',
+                             file: 'Dockerfile'
+            }
+        }
+        stage('Run Docker Image') {
+            steps {
+                sh 'docker run -p 8080:80 tayyabqaisar/lab11:${env.BUILD_ID}'
+            }
+        }
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    def username = 'tayyabqaisar'
+                    def password = credentialsId('tayyabqaisar', SecretText)
+                    docker.withRegistry('https://hub.docker.com', username, password) {
+                        docker.push('tayyabqaisar/lab11:${env.BUILD_ID}')
+                    }
+                }
+            }
+        }
+    }
+}
